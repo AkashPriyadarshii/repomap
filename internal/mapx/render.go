@@ -129,13 +129,38 @@ func (r *Result) RenderIndex(title string) string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>` + esc(title) + ` — repo map</title>
-<meta name="description" content="Token-budgeted repo map for AI agents. ` + esc(title) + ` files, symbols, refs.">
-<meta name="robots" content="index, follow">
+<title>` + esc(title) + ` — repo map for AI agents</title>
+<meta name="description" content="` + esc(title) + ` repo map: files, symbols, import refs ranked for LLM coding agents. Token-budgeted, machine-readable, searchable. Part of the read→search→orient trilogy (zcat, rustygrep, repomap).">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+<meta name="author" content="Akash Priyadarshi">
+<meta name="keywords" content="repomap, repo map, code map, AI agent, LLM, coding agent, code search, symbols, import refs, zcat, rustygrep, golang">
+<link rel="canonical" href="https://github.com/AkashPriyadarshii/repomap">
 <meta property="og:type" content="website">
-<meta property="og:title" content="` + esc(title) + ` repo map">
-<meta property="og:description" content="Machine-readable repo map: files, symbols, import refs, ranked for LLM agents.">
-<meta name="keywords" content="repomap, AI, agent, code map, repo map, symbols, ` + esc(title) + `">
+<meta property="og:url" content="https://github.com/AkashPriyadarshii/repomap">
+<meta property="og:site_name" content="repomap">
+<meta property="og:title" content="` + esc(title) + ` — repo map for AI agents">
+<meta property="og:description" content="What's in this repo in ≤budget tokens. Ranked files, symbols, import refs for LLM agents.">
+<meta property="og:image" content="https://raw.githubusercontent.com/AkashPriyadarshii/repomap/master/docs/repomap.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="` + esc(title) + ` — repo map for AI agents">
+<meta name="twitter:description" content="What's in this repo in ≤budget tokens. Ranked files, symbols, import refs for LLM agents.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/AkashPriyadarshii/repomap/master/docs/repomap.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "repomap",
+  "alternateName": "` + esc(title) + `",
+  "description": "Repo map for AI coding agents: what's in this repo in ≤budget tokens.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS, Linux, Windows",
+  "softwareVersion": "0.1.0",
+  "license": "https://opensource.org/licenses/MIT",
+  "url": "https://github.com/AkashPriyadarshii/repomap",
+  "author": {"@type": "Person", "name": "Akash Priyadarshi"},
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+}
+</script>
 <script>
 const MAP = ` + string(jsonData) + `;
 function search(q){
