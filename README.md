@@ -1,5 +1,11 @@
 # repomap
 
+[![Go](https://img.shields.io/badge/go-1.26-blue)](https://go.dev/dl/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/AkashPriyadarshii/repomap)](https://github.com/AkashPriyadarshii/repomap/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/AkashPriyadarshii/repomap)](https://pkg.go.dev/github.com/AkashPriyadarshii/repomap)
+[![built with Go](https://img.shields.io/badge/built%20with-Go-00ADD8)](https://go.dev/)
+
 Repo map for AI coding agents. Answers "what's in this repo" in the fewest
 tokens — orient before you read or search.
 
