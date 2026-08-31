@@ -134,7 +134,7 @@ func (r *Result) RenderIndex(title string) string {
 <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
 <meta name="author" content="Akash Priyadarshi">
 <meta name="keywords" content="repomap, repo map, code map, AI agent, LLM, coding agent, code search, symbols, import refs, zcat, rustygrep, golang">
-<meta name="theme-color" content="#060D0A">
+<meta name="theme-color" content="#050D09">
 <link rel="canonical" href="https://github.com/AkashPriyadarshii/repomap">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://github.com/AkashPriyadarshii/repomap">
@@ -167,16 +167,16 @@ func (r *Result) RenderIndex(title string) string {
 </script>
 <style>
   :root {
-    --bg: #060D0A;
-    --panel: #0b1712;
-    --panel-border: #132b20;
-    --panel-hover: #0f241a;
-    --ink: #e2ede7;
-    --dim: #7da593;
-    --faint: #345747;
+    --bg: #050D09;
+    --panel: #0A1610;
+    --panel-border: #12281D;
+    --panel-hover: #0E1F16;
+    --ink: #E1ECE6;
+    --dim: #7DA390;
+    --faint: #345645;
     --accent: #10B981;
     --accent-hover: #34D399;
-    --accent-deep: #047857;
+    --accent-deep: #059669;
     --accent-glow: rgba(16, 185, 129, 0.15);
     --font-display: 'Syne', sans-serif;
     --font-mono: 'Fragment Mono', ui-monospace, Menlo, monospace;
@@ -215,9 +215,9 @@ func (r *Result) RenderIndex(title string) string {
   .brand-badge {
     font-family: var(--font-mono);
     font-size: 0.72rem;
-    font-weight: 400;
+    font-weight: 600;
     color: var(--accent);
-    background: rgba(16, 185, 129, 0.1);
+    background: rgba(16, 185, 129, 0.12);
     border: 1px solid var(--accent-deep);
     padding: 0.2rem 0.55rem;
     border-radius: 4px;
@@ -299,12 +299,12 @@ func (r *Result) RenderIndex(title string) string {
     letter-spacing: 0.02em;
   }
   .badge-refs {
-    background: rgba(4, 120, 87, 0.25);
+    background: rgba(5, 150, 105, 0.25);
     color: var(--accent);
     border: 1px solid var(--accent-deep);
   }
   .badge-syms {
-    background: #08150f;
+    background: #08150F;
     color: var(--dim);
     border: 1px solid var(--panel-border);
   }
@@ -317,7 +317,7 @@ func (r *Result) RenderIndex(title string) string {
     border-radius: 6px;
   }
   pre.tree-dump {
-    background: #040806;
+    background: #030805;
     border: 1px solid var(--panel-border);
     border-radius: 8px;
     padding: 1.25rem;
