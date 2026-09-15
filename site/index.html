@@ -1,0 +1,237 @@
+<!doctype html>
+<!--
+  Design: see DESIGN.md. Emerald accent (#059669) matches assets/logo.svg.
+  System fonts only. One inline style, one inline script (copy + toggle).
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>repomap — token-budgeted repo map for AI coding agents</title>
+<meta name="description" content="repomap walks any repo, ranks files by import refs and symbols, emits orientation in under 4000 tokens. Stdlib-only Go, 3.9MB binary, tree/JSON/HTML output.">
+<meta name="keywords" content="repomap, repo map, code map, token budget, ai coding agents, golang cli, import refs, zcat, rustygrep, akash priyadarshi">
+<meta name="author" content="Akash Priyadarshi">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://akashpriyadarshii.github.io/repomap/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="repomap — token-budgeted repo map for AI coding agents">
+<meta property="og:description" content="What is in this repo, in under 4000 tokens. Ranked files, symbols inline, import refs.">
+<meta property="og:url" content="https://akashpriyadarshii.github.io/repomap/">
+<style>
+:root{
+  --acc:#059669; --acc-b:#34d399;
+  --canvas:#f4f6f4; --s1:#ecefec; --term:#0a1610; --term-ink:#d7e5dd;
+  --ink:#0c1512; --body:#2c3a34; --muted:#5a6b63;
+  --hair:#d4ddd8;
+  --grotesk:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,system-ui,sans-serif;
+  --mono:ui-monospace,"Cascadia Code","JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--canvas);color:var(--body);font:400 16px/1.55 var(--grotesk);-webkit-font-smoothing:antialiased}
+a{color:var(--acc)}
+.wrap{max-width:960px;margin:0 auto;padding:0 24px}
+.nav{background:var(--canvas);border-bottom:1px solid var(--hair);position:sticky;top:0;z-index:20}
+.nav .wrap{display:flex;align-items:center;height:60px;gap:16px;font-size:14px}
+.brand{font-weight:700;color:var(--ink);display:flex;align-items:center;gap:10px}
+.brand img{width:28px;height:28px}
+.brand:hover{text-decoration:none}
+.nav nav{margin-left:auto;display:flex;gap:2px}
+.nav nav a{padding:10px 12px;color:var(--body);white-space:nowrap}
+.hero{padding:72px 0 48px;display:grid;grid-template-columns:1fr 120px;gap:24px;align-items:start}
+.hero h1{font-size:52px;font-weight:700;line-height:1.05;letter-spacing:-2px;color:var(--ink)}
+.hero h1 .r{color:var(--acc)}
+.lede{font-size:18px;margin-top:16px;max-width:56ch}
+.hero img{width:120px;height:120px}
+.cmd{position:relative;margin-top:24px;background:var(--term);border-radius:8px;padding:16px 56px 16px 20px;font-family:var(--mono);font-size:14px;color:var(--term-ink);overflow-x:auto}
+.cmd .p{color:var(--acc-b)}
+.copy{position:absolute;top:10px;right:10px;background:transparent;border:1px solid #2a4238;color:var(--term-ink);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;min-height:32px}
+.copy:hover{border-color:var(--acc-b)}
+.cta{display:flex;gap:12px;margin-top:20px;flex-wrap:wrap}
+.btn{font-size:14px;font-weight:600;padding:12px 24px;border-radius:6px;display:inline-flex;align-items:center;min-height:44px}
+.btn-p{background:var(--acc);color:#fff}
+.btn-p:hover{background:#047857;color:#fff;text-decoration:none}
+.btn-s{border:1px solid var(--ink);color:var(--ink)}
+.btn-s:hover{background:var(--ink);color:#fff;text-decoration:none}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:32px 0 0;padding:20px 0;border-top:2px solid var(--ink);border-bottom:1px solid var(--hair)}
+.stat .n{font-size:32px;font-weight:700;letter-spacing:-1px;color:var(--ink);font-variant-numeric:tabular-nums}
+.stat .n em{font-style:normal;color:var(--acc)}
+.stat .l{font-size:13px;color:var(--muted)}
+section{padding:56px 0;border-top:1px solid var(--hair)}
+h2{font-size:32px;font-weight:700;letter-spacing:-1px;color:var(--ink);margin-bottom:8px}
+.sub{font-size:17px;margin-bottom:28px;max-width:64ch}
+.term{background:var(--term);border-radius:8px;padding:20px;font-family:var(--mono);font-size:13.5px;line-height:1.7;color:var(--term-ink);overflow-x:auto;white-space:pre}
+.term .c{color:#7d938a}
+.term .g{color:var(--acc-b)}
+.toggle{display:flex;gap:8px;margin-bottom:12px}
+.toggle button{background:var(--s1);border:1px solid var(--hair);border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer;color:var(--body);min-height:36px}
+.toggle button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+ul.why{list-style:none;margin-top:8px}
+ul.why li{padding:14px 0 14px 28px;border-top:1px solid var(--hair);position:relative}
+ul.why li::before{content:"→";position:absolute;left:0;color:var(--acc);font-weight:700}
+ul.why b{color:var(--ink)}
+.tbl{border:1px solid var(--hair);border-radius:8px;overflow-x:auto;background:#fff}
+table{width:100%;min-width:520px;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--hair)}
+thead th{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);background:var(--s1)}
+tbody tr:last-child td{border-bottom:none}
+td code,.sub code,.why code{font-family:var(--mono);font-size:.88em;background:var(--s1);padding:1px 6px;border-radius:4px;color:var(--ink)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tri{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:#fff}
+.tri a{padding:20px;color:var(--body)}
+.tri a+a{border-left:1px solid var(--hair)}
+.tri a:hover{text-decoration:none;background:var(--s1)}
+.tri b{display:block;color:var(--ink);font-size:16px}
+.tri span{font-size:13px;color:var(--muted)}
+.tri .here{background:var(--ink);color:#fff}
+.tri .here b,.tri .here span{color:#fff}
+footer{border-top:2px solid var(--ink);padding:40px 0 56px;font-size:14px}
+footer h4{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:20px 0 8px}
+footer ul{list-style:none}
+footer li{margin:4px 0}
+.fclose{text-align:center;margin-top:32px;color:var(--muted);font-size:13px}
+@media(max-width:640px){.hero{grid-template-columns:1fr}.hero img{display:none}.hero h1{font-size:40px}.stats{grid-template-columns:1fr 1fr}.tri{grid-template-columns:1fr}.tri a+a{border-left:none;border-top:1px solid var(--hair)}}
+</style>
+</head>
+<body>
+
+<header class="nav"><div class="wrap">
+<a class="brand" href="#"><img src="assets/logo.svg" alt="repomap logo">repomap</a>
+<nav><a href="#demo">Demo</a><a href="#rank">Ranking</a><a href="#flags">Flags</a><a href="https://github.com/AkashPriyadarshii/repomap">GitHub</a></nav>
+</div></header>
+
+<div class="wrap">
+<div class="hero">
+<div>
+<h1>What is in this repo, in <span class="r">under 4000 tokens</span>.</h1>
+<p class="lede">repomap walks the repo, ranks files by inbound import refs, prints symbols inline, cuts at a token budget. Orient before you read or search.</p>
+<div class="cmd"><span class="p">$</span> go install github.com/AkashPriyadarshii/repomap/cmd/repomap@latest<button class="copy" data-copy="go install github.com/AkashPriyadarshii/repomap/cmd/repomap@latest">copy</button></div>
+<div class="cta"><a class="btn btn-p" href="https://github.com/AkashPriyadarshii/repomap/releases">Download 3.9MB binary</a><a class="btn btn-s" href="#demo">See live map</a></div>
+</div>
+<img src="assets/logo.svg" alt="repomap logo — emerald rm monogram">
+</div>
+
+<div class="stats">
+<div class="stat"><div class="n"><em>14</em> files</div><div class="l">this repo, full map</div></div>
+<div class="stat"><div class="n">13,149</div><div class="l">tokens, full output</div></div>
+<div class="stat"><div class="n"><em>1</em> file</div><div class="l">at default 4000 budget</div></div>
+<div class="stat"><div class="n">0 deps</div><div class="l">stdlib Go only</div></div>
+</div>
+</div>
+
+<div class="wrap">
+<section id="demo">
+<h2>Live map</h2>
+<p class="sub">Real output from this repo, verified 2026-09-15. Toggle the budget.</p>
+<div class="toggle"><button id="b2000" class="on">--budget 2000</button><button id="bfull">--full</button></div>
+<div class="term" id="t2000"><span class="c">$ repomap --budget 2000 .</span>
+└── internal/
+    └── mapx/
+        └── walk.go	   1 refs	2022 tokens	[supportedLang, scoreFile, clamp, ...]
+
+… 12 files truncated, --full to see all
+
+1 files, 2022 tokens</div>
+<div class="term" id="tfull" hidden><span class="c">$ repomap --full .</span>
+└── CHANGELOG.md	   0 refs	 360 tokens
+└── README.md	   0 refs	1949 tokens
+└── cmd/
+    └── repomap/
+        └── main.go	   0 refs	 502 tokens	[main, version]
+└── docs/
+    ├── CLAUDE.md	   0 refs	 291 tokens
+    ├── PRD.md	   0 refs	 460 tokens
+    ├── TEST-REPORT-v0.1.0.md	   0 refs	 493 tokens
+    ├── design.md	   0 refs	 582 tokens
+    └── impl.md	   0 refs	 419 tokens
+└── internal/
+    └── mapx/
+        ├── gitignore.go	   1 refs	 983 tokens	<span class="g">[add, Match, matches, LoadGitignore, ...]</span>
+        ├── mapx_test.go	   1 refs	1016 tokens	[TestExtractSymbols, contains, ...]
+        ├── rank.go	   1 refs	 167 tokens	[Budget]
+        ├── render.go	   1 refs	2828 tokens	[RenderTree, add, RenderJSON, ...]
+        ├── symbols.go	   1 refs	1077 tokens	[ExtractSymbols, dedupe, ...]
+        └── walk.go	   1 refs	2022 tokens	[supportedLang, scoreFile, ...]
+
+14 files, 13149 tokens</div>
+</section>
+
+<section id="rank">
+<h2>How it ranks</h2>
+<p class="sub">A file is important when other files import it. Score per file:</p>
+<div class="tbl"><table>
+<thead><tr><th>Signal</th><th>Weight</th><th>Source</th></tr></thead>
+<tbody>
+<tr><td>Import in-degree (<code>refs</code>)</td><td class="num">0.45</td><td>Go blocks, Python, JS/TS, Rust, Ruby</td></tr>
+<tr><td>Symbol count</td><td class="num">0.25</td><td>Regex, first 200 lines</td></tr>
+<tr><td>Size</td><td class="num">0.15</td><td>Bytes, log scale</td></tr>
+<tr><td>Symbol density</td><td class="num">0.05</td><td>Symbols per byte</td></tr>
+</tbody></table></div>
+<p class="sub" style="margin-top:16px">Token estimate is bytes/4. Budget keeps top-N by score, always keeps rank 1.</p>
+</section>
+
+<section id="flags">
+<h2>Flags</h2>
+<div class="tbl"><table>
+<thead><tr><th>Flag</th><th>Effect</th></tr></thead>
+<tbody>
+<tr><td><code>--budget N</code></td><td>Max output tokens (default 4000, 0 = unlimited)</td></tr>
+<tr><td><code>--full</code></td><td>All files, no truncation (includes tests, vendor)</td></tr>
+<tr><td><code>--json</code></td><td>Machine-readable, same rank order</td></tr>
+<tr><td><code>--index</code></td><td>Searchable HTML page, no server</td></tr>
+<tr><td><code>-o FILE</code></td><td>Write to file</td></tr>
+<tr><td><code>--no-gitignore</code></td><td>Include ignored files (warning: huge)</td></tr>
+</tbody></table></div>
+<div class="cmd" style="margin-top:16px"><span class="p">$</span> repomap --json . | head -c 300<button class="copy" data-copy="repomap --json .">copy</button></div>
+</section>
+
+<section>
+<h2>Architecture</h2>
+<div class="term"><span class="c">cmd/repomap/main.go  — flags, budget wiring, output routing</span>
+internal/mapx/
+  walk.go       — walk + parallel extract + ref index
+  symbols.go    — regex symbol patterns per language
+  rank.go       — Budget() truncation (keeps rank 1)
+  render.go     — tree / JSON / HTML renderers
+  gitignore.go  — stdlib .gitignore subset</div>
+</section>
+
+<section>
+<h2>The trilogy</h2>
+<div class="tri">
+<a href="https://github.com/AkashPriyadarshii/zcat"><b>zcat</b><span>Read a file. Pure Zig, byte-identical to GNU cat.</span></a>
+<a href="https://github.com/AkashPriyadarshii/rustygrep"><b>rustygrep</b><span>Find a needle. Token-efficient grep for agents.</span></a>
+<a class="here"><b>repomap — you are here</b><span>Orient. Ranked map in under 4000 tokens.</span></a>
+</div>
+</section>
+</div>
+
+<div class="wrap"><footer>
+<h4>Ecosystem</h4>
+<ul>
+<li><a href="https://github.com/AkashPriyadarshii/design-genius">design-genius</a></li>
+<li><a href="https://github.com/AkashPriyadarshii/akash-design-engineering">akash-design-engineering</a></li>
+<li><a href="https://github.com/AkashPriyadarshii/tdlib-android">tdlib-android</a></li>
+<li><a href="https://github.com/AkashPriyadarshii/kharcha">kharcha</a></li>
+</ul>
+<h4>Author</h4>
+<ul><li><b>Akash Priyadarshi</b> (Patna, Bihar, India) · <a href="https://github.com/AkashPriyadarshii">GitHub</a> · <a href="https://akashpriyadarshi.vercel.app">Portfolio</a> · <a href="https://linkedin.com/in/akash-priyadarshi-1aa51b37a">LinkedIn</a> · <a href="https://akashpriyadarshii.github.io/Resume/">Resume</a></li></ul>
+<h4>Social</h4>
+<ul><li><a href="https://x.com/Akash__ydv001">X / Twitter</a> · <a href="https://www.threads.com/@free_dev2026">Threads</a> · <a href="https://www.instagram.com/akash.priyadarshii/">Instagram</a> · <a href="https://reddit.com/user/DragonfruitWeak2801">Reddit</a></li></ul>
+<p class="fclose"><b>Read with zcat. Search with rustygrep. Orient with repomap.</b><br><i>Keywords: repomap, repo map, code map, token budget, AI coding agents, import refs, golang cli.</i></p>
+</footer></div>
+
+<script>
+document.querySelectorAll("[data-copy]").forEach(function(b){
+  b.addEventListener("click",function(){
+    var t=b.getAttribute("data-copy");
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){b.textContent="copied";setTimeout(function(){b.textContent="copy"},1200)});}
+    else{b.textContent=t;}
+  });
+});
+var b2=document.getElementById("b2000"),bf=document.getElementById("bfull"),
+    t2=document.getElementById("t2000"),tf=document.getElementById("tfull");
+b2.addEventListener("click",function(){b2.classList.add("on");bf.classList.remove("on");t2.hidden=false;tf.hidden=true;});
+bf.addEventListener("click",function(){bf.classList.add("on");b2.classList.remove("on");tf.hidden=false;t2.hidden=true;});
+</script>
+</body>
+</html>

@@ -1,6 +1,9 @@
 /repomap
 /repomap.exe
+/repomap-linux-amd64
+/repomap-darwin-arm64
+/repomap-windows-amd64.exe
 *.test
-index.html
+/index.html
 
 .omc/
