@@ -2,15 +2,16 @@ package mapx
 
 // Budget truncates a ranked result to fit within a token budget.
 // Files arrive pre-sorted by score (Build). Keeps top-N by score until
-// budget exhausted, then marks the rest truncated.
+// budget exhausted, then marks the rest truncated. Always keeps the
+// top file so output never empties.
 func (r *Result) Budget(budget int) {
-	if budget <= 0 {
+	if budget <= 0 || len(r.Files) == 0 {
 		return
 	}
-	kept := 0
+	kept := len(r.Files)
 	total := 0
 	for i, f := range r.Files {
-		if total+f.Tokens > budget {
+		if i > 0 && total+f.Tokens > budget {
 			kept = i
 			break
 		}

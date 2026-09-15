@@ -35,21 +35,26 @@ func contains(ss []string, s string) bool {
 	return false
 }
 
-// TestGitignore verifies the 90% gitignore subset.
+// TestGitignore verifies the gitignore subset.
 func TestGitignore(t *testing.T) {
 	gi := &Gitignore{}
-	for _, l := range []string{"node_modules/", "*.log", "!.keep.log", "/rooted", "build/"} {
+	for _, l := range []string{"node_modules/", "*.log", "!.keep.log", "/rooted", "build/", "dist/**/out"} {
 		gi.add(l)
 	}
 	cases := []struct{ p, want string }{
 		{"node_modules/a/b.js", "ignored"},
+		{"x/node_modules/y.js", "ignored"}, // unanchored dir: any depth
 		{"src/app.js", "keep"},
 		{"debug.log", "ignored"},
 		{"logs/app.log", "ignored"},
-		{".keep.log", "kept"}, // negation wins
+		{"logs/.keep.log", "kept"}, // negation wins at depth
 		{"rooted", "ignored"},
 		{"x/rooted", "keep"}, // anchored: only root
 		{"build/x.js", "ignored"},
+		{"a/build/x.js", "ignored"}, // baseline-anchored? no: build/ unanchored
+		{"dist/out", "ignored"},     // ** matches zero dirs
+		{"dist/a/b/out", "ignored"}, // ** crosses dirs
+		{"dist/a/x.js", "keep"},
 	}
 	for _, c := range cases {
 		if gi.Match(c.p) != (c.want == "ignored") {
@@ -70,8 +75,8 @@ func TestBuildEndToEnd(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("main.go", "package main\nfunc main(){}\nfunc run(){}\n")
-	write("lib/util.go", "package lib\nfunc Helper(){}\nfunc More(){}\n")
+	write("main.go", "package main\nimport \"example.com/x/lib\"\nfunc main(){}\n")
+	write("lib/lib.go", "package lib\nfunc Helper(){}\n")
 	write("lib/test_util_test.go", "package lib\nfunc TestX(){}\n")
 	write("node_modules/x/index.js", "module.exports=1\n")
 	write("vendor/y.go", "package y\n")
@@ -82,17 +87,29 @@ func TestBuildEndToEnd(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(res.Files) != 2 {
-		t.Fatalf("expected 2 files (main.go, lib/util.go), got %d: %v", len(res.Files), paths(res))
+		t.Fatalf("expected 2 files (main.go, lib/lib.go), got %d: %v", len(res.Files), paths(res))
 	}
-	// main.go references lib/util.go -> util should rank higher.
-	if res.Files[0].Path != "lib/util.go" {
-		t.Fatalf("expected lib/util.go first by refs, got %v", paths(res))
+	// main.go imports example.com/x/lib -> lib/lib.go gets 1 ref, ranks first.
+	if res.Files[0].Path != "lib/lib.go" {
+		t.Fatalf("expected lib/lib.go first by refs, got %v (refs=%v)", paths(res), refs(res))
+	}
+	if res.Files[0].Refs != 1 {
+		t.Fatalf("expected lib/lib.go refs=1, got %v", refs(res))
 	}
 	// Budget truncates.
 	orig := len(res.Files)
 	res.Budget(1)
 	if len(res.Files) >= orig {
 		t.Fatalf("budget 1 should truncate from %d files", orig)
+	}
+}
+
+// TestBudgetFit keeps everything when all files fit.
+func TestBudgetFit(t *testing.T) {
+	r := &Result{Files: []File{{Path: "a.go", Tokens: 3}, {Path: "b.go", Tokens: 4}}}
+	r.Budget(4000)
+	if len(r.Files) != 2 || r.Truncated != 0 || r.TotalTokens != 7 {
+		t.Fatalf("fit-case emptied: %+v", r)
 	}
 }
 
@@ -109,6 +126,14 @@ func paths(r *Result) []string {
 	out := make([]string, len(r.Files))
 	for i, f := range r.Files {
 		out[i] = f.Path
+	}
+	return out
+}
+
+func refs(r *Result) []int {
+	out := make([]int, len(r.Files))
+	for i, f := range r.Files {
+		out[i] = f.Refs
 	}
 	return out
 }

@@ -81,14 +81,6 @@ func dedupe(in []string) []string {
 	return out
 }
 
-var importPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?m)^\s*(?:import|from)\s+["']([^"']+)["']`), // python, js, ts
-	regexp.MustCompile(`(?m)^\s*import\s+"([^"]+)"`),                 // go
-	regexp.MustCompile(`(?m)^\s*use\s+([a-zA-Z_:][a-zA-Z0-9_:]*)\s*[;{]"`), // rust/php
-	regexp.MustCompile(`(?m)require\(['"]([^'"]+)['"]\)`),            // node
-	regexp.MustCompile(`(?m)^\s*using\s+([a-zA-Z_][a-zA-Z0-9_.]*);`), // c#/php
-}
-
 // importSegs splits an import token into candidate segments for ref
 // matching: last path chunk, plus for Rust "crate::a::b" the module names.
 // Keeps only word-ish segments (no "crate", "super", bare letters).

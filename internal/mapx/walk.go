@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -62,21 +63,24 @@ func clamp(v float64) float64 {
 	return v
 }
 
-func firstLines(s string, n int) string {
+func firstLinesBytes(b []byte, n int) string {
 	count := 0
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\n' {
+	for i := 0; i < len(b); i++ {
+		if b[i] == '\n' {
 			count++
 			if count >= n {
-				return s[:i]
+				return string(b[:i])
 			}
 		}
 	}
-	return s
+	return string(b)
 }
 
 // parseImports extracts module-ish tokens from import lines.
 func parseImports(ext, content string) []string {
+	if strings.ToLower(ext) == ".go" {
+		return parseGoImports(content) // blocks need line-state, not one regex
+	}
 	var out []string
 	impRe := importReFor(ext)
 	if impRe == nil {
@@ -90,14 +94,37 @@ func parseImports(ext, content string) []string {
 	return out
 }
 
+var goQuotedRe = regexp.MustCompile(`"([^"]+)"`)
+
+// parseGoImports handles single-line `import "x"` and `import (...)` blocks.
+func parseGoImports(content string) []string {
+	var out []string
+	inBlock := false
+	for _, line := range strings.Split(content, "\n") {
+		t := strings.TrimSpace(line)
+		if strings.HasPrefix(t, "import (") || t == "import (" {
+			inBlock = true
+			continue
+		}
+		if inBlock && t == ")" {
+			inBlock = false
+			continue
+		}
+		if inBlock || strings.HasPrefix(t, "import ") {
+			if m := goQuotedRe.FindStringSubmatch(t); len(m) > 1 {
+				out = append(out, m[1])
+			}
+		}
+	}
+	return out
+}
+
 func importReFor(ext string) *regexp.Regexp {
 	switch strings.ToLower(ext) {
-	case ".py":
+	case ".py": // .go handled by parseGoImports (block-aware)
 		return regexp.MustCompile(`(?m)^\s*(?:import|from)\s+([A-Za-z_][A-Za-z0-9_.]*)`)
 	case ".js", ".ts", ".jsx", ".tsx":
 		return regexp.MustCompile(`(?m)(?:import|require)\s*\(?\s*['"]([^'"]+)['"]`)
-	case ".go":
-		return regexp.MustCompile(`(?m)^\s*import\s+["]?([^"\s)]+)["]?`)
 	case ".rs":
 		return regexp.MustCompile(`(?m)^\s*use\s+([A-Za-z_][A-Za-z0-9_:]*)`)
 	case ".rb":
@@ -166,7 +193,10 @@ func Build(ctx context.Context, root string, gitignore *Gitignore, full bool) (*
 	var wg sync.WaitGroup
 	ctxWork, cancel := context.WithCancel(ctx)
 	defer cancel()
-	workers := 8
+	workers := runtime.NumCPU()
+	if workers < 1 {
+		workers = 1
+	}
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
@@ -183,7 +213,7 @@ func Build(ctx context.Context, root string, gitignore *Gitignore, full bool) (*
 					continue
 				}
 				ext := strings.ToLower(filepath.Ext(abs))
-				syms := ExtractSymbols(ext, firstLines(string(data), 200))
+				syms := ExtractSymbols(ext, firstLinesBytes(data, 200))
 				mods := parseImports(ext, string(data))
 				mu.Lock()
 				if f, ok := byPath[relS]; ok {
@@ -214,20 +244,48 @@ func Build(ctx context.Context, root string, gitignore *Gitignore, full bool) (*
 
 	// Ref counting: a file is important when OTHER files import it.
 	// Import token ("internal/mapx", "crate::walker", "walker", "fs") →
-	// candidate segments (walk a-z, path-ish chunks). A candidate matches
-	// a target file whose basename equals it, or a dir prefix equal to it.
+	// candidate segments. A candidate matches a target file whose basename
+	// equals it, or any of whose dir segments equals it. One (src,target)
+	// edge counts once, however many segments hit.
 	// Heuristic; a map orients, it doesn't reason.
+	byBase := map[string][]string{}
+	byDir := map[string][]string{}
+	for _, f := range byPath {
+		base := trimExt(filepath.Base(f.Path))
+		byBase[base] = append(byBase[base], f.Path)
+		for _, seg := range strings.Split(filepath.ToSlash(filepath.Dir(f.Path)), "/") {
+			if seg != "" && seg != "." {
+				byDir[seg] = append(byDir[seg], f.Path)
+			}
+		}
+	}
+	seen := map[string]struct{}{}
+	count := func(src, target string) {
+		if target == src {
+			return
+		}
+		key := src + "\x00" + target
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		refsByPath[target]++
+	}
 	for src, mods := range imports {
 		for _, m := range mods {
 			for _, seg := range importSegs(m) {
-				for _, f := range byPath {
-					if f.Path == src {
-						continue
-					}
-					base := trimExt(filepath.Base(f.Path))
-					if base == seg || strings.HasPrefix(f.Path, seg+"/") {
-						refsByPath[f.Path]++
-						break
+				for _, cand := range byBase[seg] {
+					count(src, cand)
+				}
+				for _, cand := range byDir[seg] {
+					count(src, cand)
+				}
+				if strings.Contains(seg, "/") {
+					// multi-segment dir prefix (rare): linear scan
+					for _, f := range byPath {
+						if strings.HasPrefix(f.Path, seg+"/") {
+							count(src, f.Path)
+						}
 					}
 				}
 			}
