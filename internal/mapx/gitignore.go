@@ -3,14 +3,17 @@ package mapx
 import (
 	"os"
 	"path"
+	"path/filepath"
+	"regexp"
 	"strings"
 )
 
 // Gitignore matches paths against .gitignore-style patterns.
-// Stdlib-only: no go-gitignore dep. Implements the 90% case —
-// glob (*, **), negation (!), leading slash anchoring, dir suffix (/).
-// ponytail: gitignore subset, full gitignore (git::check-ignore semantics)
-// if real-world repos expose misses.
+// Stdlib-only: no go-gitignore dep. Implements glob (*, **, ?),
+// negation (!), leading slash anchoring, dir suffix (/).
+// Unanchored names match basenames at any depth (git semantics).
+// ponytail: nested .gitignore files + escaped chars (!) if real-world
+// repos expose misses.
 type Gitignore struct {
 	patterns []giPattern
 }
@@ -19,14 +22,14 @@ type giPattern struct {
 	raw    string // as written
 	neg    bool   // starts with !
 	dir    bool   // ends with /
-	anchor bool   // starts with /
+	anchor bool   // starts with / or contains / mid-pattern
 	base   string // pattern without leading / and trailing /
-	star   bool   // contains * or **
+	re     *regexp.Regexp
 }
 
 func LoadGitignore(root string) (*Gitignore, error) {
 	gi := &Gitignore{}
-	data, err := os.ReadFile(path.Join(root, ".gitignore"))
+	data, err := os.ReadFile(filepath.Join(root, ".gitignore"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return gi, nil
@@ -56,12 +59,54 @@ func (gi *Gitignore) add(line string) {
 	if strings.HasPrefix(line, "/") {
 		p.anchor = true
 		line = strings.TrimPrefix(line, "/")
-	}
-	if strings.Contains(line, "*") {
-		p.star = true
+	} else if strings.Contains(line, "/") {
+		// git: a slash anywhere but trailing anchors the pattern to root
+		p.anchor = true
 	}
 	p.base = line
+	p.re = globToRe(line, p.anchor)
 	gi.patterns = append(gi.patterns, p)
+}
+
+// globToRe compiles a gitignore glob to a regexp over slash paths:
+// **/ matches zero+ dirs, ** matches anything, * matches non-/ run.
+func globToRe(pat string, anchored bool) *regexp.Regexp {
+	var b strings.Builder
+	b.WriteString("^")
+	if !anchored {
+		b.WriteString("(?:.*/)?")
+	}
+	i := 0
+	for i < len(pat) {
+		switch pat[i] {
+		case '*':
+			if i+1 < len(pat) && pat[i+1] == '*' {
+				// ** or **/
+				if i+2 < len(pat) && pat[i+2] == '/' {
+					b.WriteString("(?:.*/)?")
+					i += 3
+				} else {
+					b.WriteString(".*")
+					i += 2
+				}
+			} else {
+				b.WriteString("[^/]*")
+				i++
+			}
+		case '?':
+			b.WriteString("[^/]")
+			i++
+		default:
+			b.WriteString(regexp.QuoteMeta(string(pat[i])))
+			i++
+		}
+	}
+	b.WriteString("$")
+	re, err := regexp.Compile(b.String())
+	if err != nil {
+		return regexp.MustCompile("^$")
+	}
+	return re
 }
 
 // Match reports whether a repo-relative slash path (e.g. "src/app.go"
@@ -77,33 +122,32 @@ func (gi *Gitignore) Match(rel string) bool {
 }
 
 func (p giPattern) matches(rel string) bool {
-	// dir patterns match a dir and anything under it
 	if p.dir {
-		if rel == p.base || strings.HasPrefix(rel, p.base+"/") {
-			return true
+		// dir itself or anything under it; unanchored matches at any depth
+		if p.anchor {
+			if rel == p.base || strings.HasPrefix(rel, p.base+"/") {
+				return true
+			}
+			return false
 		}
-		return false
-	}
-	if p.star {
-		// bare pattern (no slash) applies at any depth: match basename.
-		if !strings.Contains(p.base, "/") {
-			ok, _ := path.Match(p.base, path.Base(rel))
-			return ok
+		for i := range rel {
+			if i > 0 && rel[i-1] != '/' {
+				continue
+			}
+			rest := rel[i:]
+			if rest == p.base || strings.HasPrefix(rest, p.base+"/") {
+				return true
+			}
+			if p.re.MatchString(rest) || p.re.MatchString(path.Base(rest)) {
+				return true
+			}
 		}
-		ok, _ := path.Match(p.base, rel)
-		return ok
+		return p.re.MatchString(rel) || p.re.MatchString(path.Base(rel))
 	}
 	if p.anchor {
-		return rel == p.base
+		return p.re.MatchString(rel)
 	}
-	// unanchored basename matches at any depth
-	if rel == p.base {
-		return true
-	}
-	if strings.HasPrefix(rel, p.base+"/") {
-		return true
-	}
-	return false
+	return p.re.MatchString(rel) || p.re.MatchString(path.Base(rel))
 }
 
 // BaselineIgnore returns always-ignored paths (VCS, node_modules, caches).
