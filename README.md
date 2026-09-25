@@ -1,4 +1,6 @@
 <!--
+
+**Support:** fuel the next build — [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
   =============================================================================
   SEO METADATA & KEYWORD INDEX
   =============================================================================
@@ -39,7 +41,7 @@ Third of a trilogy:
 
 [Quickstart](#-quickstart) · [Why](#-why) · [How it ranks](#-how-it-ranks) · [Flags](#-flags) · [JSON](#-json-mode) · [Architecture](#-architecture)
 
-*Fuel the next build:* [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
+*Fuel the next build:* 
 
 </div>
 
