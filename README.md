@@ -1,6 +1,5 @@
 <!--
 
-**Support:** fuel the next build — [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
   =============================================================================
   SEO METADATA & KEYWORD INDEX
   =============================================================================
@@ -17,6 +16,7 @@
   =============================================================================
 -->
 
+**Support:** fuel the next build — [![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/AkashPriyadarshi)
 <div align="center">
 
 <img src="assets/logo.svg" width="96" height="96" alt="repomap logo — emerald rm monogram over ranked-file bars and a token-budget cap">
