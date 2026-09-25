@@ -41,8 +41,6 @@ Third of a trilogy:
 
 [Quickstart](#-quickstart) · [Why](#-why) · [How it ranks](#-how-it-ranks) · [Flags](#-flags) · [JSON](#-json-mode) · [Architecture](#-architecture)
 
-*Fuel the next build:* 
-
 </div>
 
 [![crates.io](https://img.shields.io/crates/v/repomap?style=flat-square)](https://crates.io/crates/repomap) [![downloads](https://img.shields.io/crates/d/repomap?style=flat-square)](https://crates.io/crates/repomap) [![release](https://img.shields.io/github/v/release/AkashPriyadarshii/repomap?style=flat-square&label=release)](https://github.com/AkashPriyadarshii/repomap/releases)
